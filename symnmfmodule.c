@@ -13,86 +13,128 @@ static PyObject *norm(PyObject *self, PyObject* args);
 PyMODINIT_FUNC PyInit_mykmeanssp(void);
 static void free_Matrix(double **head);
 static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int N, int dim);
-static PyObject *convert_CMatrix_To_PyObject(double **ret_matrix, int N, int dim);
+static PyObject *convert_CMatrix_To_PyMatrix(double **ret_matrix, int N, int dim);
 static void print_Matrix(double **head);
 
 
-/*symnmf called from symnmf.py with the arguments - data point, k, dim, N */
+/*symnmf called from symnmf.py with the arguments - H0, W, dim, k, N */
 static PyObject *symnmf(PyObject *self, PyObject *args) {
-    PyObject *pyPointsMatrix;             /* PyObject* - Matrix of points */
-    PyObject *pyH;                        /* PyObject* Matrix H */
-    int k;                                /* C Objects - int arguments */
-    double **pointsMatrix, **ret_H;       /* C Objects - Matrix pointer*/
+    PyObject *pyW;                          /* PyObject* - normal Matrix */
+    PyObject *pyH;                          /* PyObject* Matrix H */
+    int k, N, dim;                          /* C Objects - int arguments */
+    double **W, **H;                    /* C Objects - W, H Matrix*/
 
     
-    /*providing space for pointsMatrix head*/
-    pointsMatrix = malloc(sizeof(double));
-    if (pointsMatrix == NULL) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
-    
     /* Parse the arguments to retrieve the Python objects and additional int arguments */
-    if (!PyArg_ParseTuple(args, "Osi", &pyPointsMatrix, &k)) {
+    if (!PyArg_ParseTuple(args, "OOiii", &pyW, &pyH, &k, &N, &dim)) {
         return NULL;  
     }
 
-    /* Convert the PyObject* to struct vector* using appropriate conversion functions */
-    pointsMatrix = convert_PyMatrix_To_CMatrix(pyPointsMatrix, M, dim);
+    /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
+    W = convert_PyMatrix_To_CMatrix(pyW, N, dim);
+    H = convert_PyMatrix_To_CMatrix(pyH, N, dim);
 
-    /* Perform the fitting algorithm using the extracted data and additional arguments*/
-    ret_H = symnmf_c(pointsMatrix, k);
+    /* Perform the symnmf algorithm using the extracted data and additional arguments*/
+    H = symnmf_c(H, W, k, N, dim);
     
-
-    /* Convert the struct vector* to PyObject* using appropriate conversion functions*/
-    pyH = convert_CMatrix_To_PyObject(ret_H, k, dim);
+    /* Calculates the H matrix from symnmf algo using func symnmf_c from symnmf.c */
+    pyH = convert_CMatrix_To_PyMatrix(H, N, dim);
     
     /* Cleanup memory */
-    free_Matrix(pointsMatrix);
+    free_Matrix(W);
+    free_Matrix(H);
     
-
-    /* Return the new centroids list as a PyObject* */
+    /* Return the H matrix as a PyObject* (list of lists) */
     return pyH;
-
 }
-/*sym called from symnmf.py with the arguments - data point, k, dim, N */
-static PyObject *symnmf(PyObject *self, PyObject *args) {
-    PyObject *pyPointsMatrix;             /* PyObject* - Matrix of points */
-    PyObject *pyH;                        /* PyObject* Matrix H */
-    int k;                                /* C Objects - int arguments */
-    double **pointsMatrix, **ret_H;       /* C Objects - Matrix pointer*/
 
+/*sym called from symnmf.py with the arguments - data point, dim, N */
+static PyObject *sym(PyObject *self, PyObject *args) {
+    PyObject *pyX, *pyA;                /* PyObject* - similarity Matrix */
+    int N, dim;                         /* C Objects - int arguments */
+    double **X, **A;                    /* C Objects - X, A Matrix*/
     
-    /*providing space for pointsMatrix head*/
-    pointsMatrix = malloc(sizeof(double));
-    if (pointsMatrix == NULL) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
     
     /* Parse the arguments to retrieve the Python objects and additional int arguments */
-    if (!PyArg_ParseTuple(args, "Osi", &pyPointsMatrix, &k)) {
+    if (!PyArg_ParseTuple(args, "Oii", &pyX, &N, &dim)) {
         return NULL;  
     }
 
-    /* Convert the PyObject* to struct vector* using appropriate conversion functions */
-    pointsMatrix = convert_PyMatrix_To_CMatrix(pyPointsMatrix, M, dim);
+    /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
+    X = convert_PyMatrix_To_CMatrix(pyX, N, dim);
 
-    /* Perform the fitting algorithm using the extracted data and additional arguments*/
-    ret_H = sym_c(pointsMatrix, k);
+    /* Perform the sym algorithm using the extracted data and additional arguments*/
+    A = sym_c(X, N, dim);
     
-
-    /* Convert the struct vector* to PyObject* using appropriate conversion functions*/
-    pyH = convert_CMatrix_To_PyObject(ret_H, k, dim);
+    /* Calculates the similarity matrix using func sym_c from symnmf.c */
+    pyA = convert_CMatrix_To_PyMatrix(A, N, dim);
     
     /* Cleanup memory */
-    free_Matrix(pointsMatrix);
+    free_Matrix(X);
+    free_Matrix(A);
     
-
-    /* Return the new centroids list as a PyObject* */
-    return pyH;
-
+    /* Return the A matrix as a PyObject* (list of lists) */
+    return pyA;
 }
+
+/*ddg called from symnmf.py with the arguments - data point, dim, N */
+static PyObject *ddg(PyObject *self, PyObject *args) {
+    PyObject *pyX, *pyD;                /* PyObject* - diagonal degree Matrix */
+    int N, dim;                         /* C Objects - int arguments */
+    double **X, **D;                    /* C Objects - X, D Matrix*/
+    
+    
+    /* Parse the arguments to retrieve the Python objects and additional int arguments */
+    if (!PyArg_ParseTuple(args, "Oii", &pyX, &N, &dim)) {
+        return NULL;  
+    }
+
+    /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
+    X = convert_PyMatrix_To_CMatrix(pyX, N, dim);
+
+    /* Calculates the diagonal degree matrix using func ddg_c from symnmf.c */
+    D = ddg_c(X, N, dim);
+    
+    /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
+    pyD = convert_CMatrix_To_PyMatrix(D, N, dim);
+    
+    /* Cleanup memory */
+    free_Matrix(X);
+    free_Matrix(D);
+    
+    /* Return the D matrix as a PyObject* (list of lists) */
+    return pyD;
+}
+
+/*norm called from symnmf.py with the arguments - data point, dim, N */
+static PyObject *norm(PyObject *self, PyObject *args) {
+    PyObject *pyX, *pyW;                /* PyObject* - normal Matrix */
+    int N, dim;                         /* C Objects - int arguments */
+    double **X, **W;                    /* C Objects - X, W Matrix*/
+    
+    
+    /* Parse the arguments to retrieve the Python objects and additional int arguments */
+    if (!PyArg_ParseTuple(args, "Oii", &pyX, &N, &dim)) {
+        return NULL;  
+    }
+
+    /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
+    X = convert_PyMatrix_To_CMatrix(pyX, N, dim);
+
+    /* Calculates the normal matrix using func norm_c from symnmf.c */
+    W = norm_c(X, N, dim);
+    
+    /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
+    pyW = convert_CMatrix_To_PyMatrix(W, N, dim);
+    
+    /* Cleanup memory */
+    free_Matrix(X);
+    free_Matrix(W);
+    
+    /* Return the D matrix as a PyObject* (list of lists) */
+    return pyW;
+}
+
 static PyMethodDef module_methods[] = {
     { "symnmf", (PyCFunction) symnmf, METH_VARARGS, "Perform full the symNMF and output H" },
     { "sym", (PyCFunction) sym, METH_VARARGS, "Calculate and output the similarity matrix" },
@@ -101,167 +143,71 @@ static PyMethodDef module_methods[] = {
     { NULL, NULL, 0, NULL }  /* Sentinel indicating the end of the array */
 };
 
-static struct PyModuleDef fitmodule = {
+
+static struct PyModuleDef symnmfmodule = {
     PyModuleDef_HEAD_INIT,
-    "mykmeanssp",       /* name of module */
+    "mysymnmfsp",       /* name of module */
     NULL,               /* module documentation */
     -1,                 /* the module keeps state in global variables */
     module_methods      /* the PyMethodDef array */
 };
 
-PyMODINIT_FUNC PyInit_mykmeanssp(void){
+PyMODINIT_FUNC PyInit_mysymnmfsp(void){
     PyObject *m;
-    m = PyModule_Create(&fitmodule);
+    m = PyModule_Create(&symnmfmodule);
     if (!m) {
         return NULL;
     }
     return m;
 }
 
-static struct vector* convert_PyPointsList_To_VectorPointer(PyObject *pylist, int N, int dim){
-    PyObject *item;
-    PyObject *curr_lst;
-    double num;
+static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
+    PyObject *item, *curr_lst, *curr_cord;
+    double **CMatrix;
     int i,j;
-    struct vector *head_vec, *curr_vec, *next_curr_vec;
-    struct cord *curr_cord, *next_curr_cord;
-
-    /* providing space for the head_vec - first vec*/
-    curr_vec = malloc(sizeof(struct vector));
-    if (curr_vec == NULL) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
-    curr_vec->next = NULL;
-
-    /*the first vec is the head of the linked list*/
-    head_vec = curr_vec;
-
-    for (i = 0; i < N; i++) {
-
-        /*gets the i'th arg in pylist - a list of doubles*/
-        curr_lst = PyList_GetItem(pylist, i);  
-        if (!PyList_Check(curr_lst)) {
-            printf("Invalid list object encountered. Exiting.\n");
-            freeVectors(head_vec);
-            return NULL;
-        }
-        
-        /* providing space for the first cord*/
-        curr_cord = malloc(sizeof(struct cord));
-        if (curr_cord == NULL) {
-            printf("An Error Has Occurred\n");
-            freeVectors(head_vec);
-            exit(1);
-        }
-        curr_cord->next = NULL;
-
-
-        /*iterativly add cord to the vec */
-        for (j = 0; j < dim; j++){
-            
-            if (j == 0){    /*the first cord is the cords of the vec*/
-            curr_vec->cords = curr_cord;
-            }
-            
-            /*converting the py-float to c-double*/
-            item = PyList_GetItem(curr_lst, j); /*gets the j'th double in the list*/
-            if (!PyFloat_Check(item)) {
-                printf("Invalid float object encountered. Exiting.\n");
-                freeVectors(head_vec);
-                return NULL;
-            }
-            num = PyFloat_AsDouble(item);    /*converts the py-float to c-double */
-            
-            curr_cord->value = num;         /*add the cord value*/
-
-            if (j != dim-1){
-                /* providing space for the next cord */
-                next_curr_cord = malloc(sizeof(struct cord));
-                if (next_curr_cord == NULL) {
-                    printf("An Error Has Occurred\n");
-                    freeVectors(head_vec);
-                    exit(1);
-                }
-                next_curr_cord->next = NULL;
-                curr_cord->next = next_curr_cord;
-                curr_cord = next_curr_cord;
-            
-            }
-        }
-
-        /* providing space for the next vec */
-        if (i != N-1){
-        next_curr_vec = malloc(sizeof(struct vector));
-        if (next_curr_vec == NULL) {
-            printf("An Error Has Occurred\n");
-            freeVectors(head_vec);
-            exit(1);
-        }
-        next_curr_vec->next = NULL;
-        curr_vec->next = next_curr_vec;
-        curr_vec = next_curr_vec;
-        }
-        
-    }
-    return head_vec;
-}
-
-static PyObject *convert_VectorPointer_To_PyObject(struct vector *ret_centroidsList, int k, int dim){
     
-    PyObject *pylist, *cords_list, *cord_obj;
-    struct vector *curr_vec;
-    struct cord *curr_cord;
-    int i,j;
-    double val;
-
-    pylist = PyList_New(k);  /* Create the Python list to hold the vectors lists */
-    
-    if (pylist == NULL) {
-        printf("Failed to create Python list. Exiting.\n");
+    /* providing space for the C Matrix - mXn*/
+    CMatrix = (double**) malloc(sizeof(double **)*(m));
+    if (CMatrix == NULL){
         return NULL;
     }
+    
+    /* fill the C matrix with values of py matrix */
+    for (i = 0; i < m; i++){
 
-    /* pointer to run over the vectors, points to the first vector */
-    curr_vec = ret_centroidsList;
-
-    for (i = 0; i < k; i++) {
-
-        /* Create a new Python list to hold the cordinates of the i'th vector */
-        cords_list = PyList_New(dim);
-
-        if (cords_list == NULL) {
-            printf("Failed to create Python list for coordinates. Exiting.\n");
+        curr_lst = PyList_GETITEM(PyMatrix,i);     
+        CMatrix[i] = (double*) malloc(sizeof(double *)*(n));
+        if (CMatrix[i] == NULL){
             return NULL;
-        }   
-
-         /* pointer to run over the cordinates of the curr vector */
-        curr_cord = curr_vec->cords;
-
-        /*iterativly add cord to the vec */
-        for (j = 0; j < dim; j++){
-
-            /* Convert the cordinate to a Python float object */
-            val = curr_cord->value;
-            cord_obj = Py_BuildValue("d", val);  
-            
-            if (cord_obj == NULL) {
-                printf("Failed to create Python float object. Exiting.\n");
-                return NULL;
-            }
-            
-            /* Add the j'th cordinate to the cordinates list */
-            PyList_SetItem(cords_list, j, cord_obj);
-            /* steping to the next cord of the vec */  
-            curr_cord = curr_cord->next;
         }
 
-        /* Add the cords list to the i'th vec */
-        PyList_SetItem(pylist, i, cords_list);
+        for(j = 0; j < n; j++){
+            curr_cord = PyList_GETITEM(curr_lst,j);
+            C_Matrix[i][j] = PyFloat_AsDouble(curr_cord);
+        }
 
-        /* steping to the next vec of the vecs */  
-        curr_vec = curr_vec->next;
-    } 
-    return pylist;
+    }
+
+    return CMatrix;
 }
 
+static PyObject *convert_CMatrix_To_PyMatrix(double **CMatrix, int m, int n){
+    PyObject *pyMatrix, *curr_lst, *Pycord;
+    int i,j;
+    double curr_cord;
+    
+    /* Create the Python list to hold the pyMatrix (list of lists) */
+    pyMatrix = PyList_New(m);  
+
+    for(i = 0 ; i < m ; i++){
+
+        curr_lst = PyList_New(n);
+        for (j = 0 ; j < n ; j++){
+            curr_cord = CMatrix[n*i + j]
+            Pycord = Py_BuildValue("d", curr_cord);
+            PyList_SetItem(curr_lst,j,Pycord);
+        }
+        PyList_SetItem(pyMatrix,i,curr_lst);        
+    }
+    return(pyMatrix)
+}
