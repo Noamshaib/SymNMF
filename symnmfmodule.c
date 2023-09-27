@@ -10,7 +10,7 @@ static PyObject *sym(PyObject *self, PyObject* args);
 static PyObject *ddg(PyObject *self, PyObject* args);
 static PyObject *norm(PyObject *self, PyObject* args);
 
-PyMODINIT_FUNC PyInit_mykmeanssp(void);
+PyMODINIT_FUNC PyInit_mysymnmfsp(void);
 static void free_Matrix(double **head);
 static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int N, int dim);
 static PyObject *convert_CMatrix_To_PyMatrix(double **ret_matrix, int N, int dim);
