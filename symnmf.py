@@ -6,7 +6,7 @@ np.random.seed(0)
 
 if len(sys.argv) == 3:
     goal = sys.argv[1]
-    inputfile = srs.argv[2]
+    inputfile = sys.argv[2]
 else:
     k = sys.argv[1]
     goal = sys.argv[2]
@@ -36,7 +36,7 @@ else:  # goal == "norm"
 
 
 def defX(filename):
-    return pd.read_csv(filename, header=None)
+    return pd.read_csv(filename, header=None).values.tolist()
 
 def initial_H(W, k, n):
     W_np = np.array(W)
