@@ -3,8 +3,6 @@
 #include<Python.h>
 #include "symnmf.h"
 
-/*initiallize new classes - used as linked list*/
-
 static PyObject *symnmf(PyObject *self, PyObject* args);
 static PyObject *sym(PyObject *self, PyObject* args);
 static PyObject *ddg(PyObject *self, PyObject* args);
