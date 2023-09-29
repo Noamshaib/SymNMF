@@ -27,18 +27,18 @@ static PyObject *symnmf(PyObject *self, PyObject *args) {
     }
 
     /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
-    W = convert_PyMatrix_To_CMatrix(pyW, N, dim);
-    H = convert_PyMatrix_To_CMatrix(pyH, N, dim);
+    W = convert_PyMatrix_To_CMatrix(pyW, N, N);
+    H = convert_PyMatrix_To_CMatrix(pyH, N, N);
 
-    /* Perform the symnmf algorithm using the extracted data and additional arguments*/
-    H = symnmf_c(H, W, k, N, dim);
-    
     /* Calculates the H matrix from symnmf algo using func symnmf_c from symnmf.c */
-    pyH = convert_CMatrix_To_PyMatrix(H, N, dim);
+    H = symnmf_c(H, W, N, k);
+    
+    /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
+    pyH = convert_CMatrix_To_PyMatrix(H, N, N);
     
     /* Cleanup memory */
-    free_Matrix(W);
-    free_Matrix(H);
+    freeMatrix(W, N);
+    freeMatrix(H, N);
     
     /* Return the H matrix as a PyObject* (list of lists) */
     return pyH;
@@ -59,15 +59,15 @@ static PyObject *sym(PyObject *self, PyObject *args) {
     /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
     X = convert_PyMatrix_To_CMatrix(pyX, N, dim);
 
-    /* Perform the sym algorithm using the extracted data and additional arguments*/
+    /* Calculates the similarity matrix using func sym_c from symnmf.c */
     A = sym_c(X, N, dim);
     
-    /* Calculates the similarity matrix using func sym_c from symnmf.c */
-    pyA = convert_CMatrix_To_PyMatrix(A, N, dim);
-    
+    /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
+    pyA = convert_CMatrix_To_PyMatrix(A, N, N);
+
     /* Cleanup memory */
-    free_Matrix(X);
-    free_Matrix(A);
+    freeMatrix(X, N);
+    freeMatrix(A, N);
     
     /* Return the A matrix as a PyObject* (list of lists) */
     return pyA;
@@ -92,11 +92,11 @@ static PyObject *ddg(PyObject *self, PyObject *args) {
     D = ddg_c(X, N, dim);
     
     /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
-    pyD = convert_CMatrix_To_PyMatrix(D, N, dim);
+    pyD = convert_CMatrix_To_PyMatrix(D, N, N);
     
     /* Cleanup memory */
-    free_Matrix(X);
-    free_Matrix(D);
+    freeMatrix(X, N);
+    freeMatrix(D, N);
     
     /* Return the D matrix as a PyObject* (list of lists) */
     return pyD;
@@ -121,11 +121,11 @@ static PyObject *norm(PyObject *self, PyObject *args) {
     W = norm_c(X, N, dim);
     
     /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
-    pyW = convert_CMatrix_To_PyMatrix(W, N, dim);
+    pyW = convert_CMatrix_To_PyMatrix(W, N, N);
     
     /* Cleanup memory */
-    free_Matrix(X);
-    free_Matrix(W);
+    freeMatrix(X, N);
+    freeMatrix(W, N);
     
     /* Return the D matrix as a PyObject* (list of lists) */
     return pyW;
@@ -158,7 +158,7 @@ PyMODINIT_FUNC PyInit_mysymnmfsp(void){
 }
 
 static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
-    PyObject *item, *curr_lst, *curr_cord;
+    PyObject *curr_lst, *curr_cord;
     double **CMatrix;
     int i,j;
     
@@ -171,15 +171,15 @@ static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
     /* fill the C matrix with values of py matrix */
     for (i = 0; i < m; i++){
 
-        curr_lst = PyList_GETITEM(PyMatrix,i);     
+        curr_lst = PyList_GET_ITEM(pyMatrix,i);     
         CMatrix[i] = (double*) malloc(sizeof(double *)*(n));
         if (CMatrix[i] == NULL){
             return NULL;
         }
 
         for(j = 0; j < n; j++){
-            curr_cord = PyList_GETITEM(curr_lst,j);
-            C_Matrix[i][j] = PyFloat_AsDouble(curr_cord);
+            curr_cord = (PyObject *)PyList_GET_ITEM(curr_lst,j);
+            CMatrix[i][j] = PyFloat_AsDouble(curr_cord);
         }
 
     }
@@ -188,9 +188,8 @@ static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
 }
 
 static PyObject *convert_CMatrix_To_PyMatrix(double **CMatrix, int m, int n){
-    PyObject *pyMatrix, *curr_lst, *Pycord;
+    PyObject *pyMatrix, *curr_lst, *pycord;
     int i,j;
-    double curr_cord;
     
     /* Create the Python list to hold the pyMatrix (list of lists) */
     pyMatrix = PyList_New(m);  
@@ -199,11 +198,11 @@ static PyObject *convert_CMatrix_To_PyMatrix(double **CMatrix, int m, int n){
 
         curr_lst = PyList_New(n);
         for (j = 0 ; j < n ; j++){
-            curr_cord = CMatrix[n*i + j]
-            Pycord = Py_BuildValue("d", curr_cord);
-            PyList_SetItem(curr_lst,j,Pycord);
+            pycord = Py_BuildValue("d", CMatrix[i][j]);
+            PyList_SetItem(curr_lst,j,pycord);
         }
+
         PyList_SetItem(pyMatrix,i,curr_lst);        
     }
-    return(pyMatrix)
+    return pyMatrix;
 }
