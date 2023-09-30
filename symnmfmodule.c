@@ -28,13 +28,13 @@ static PyObject *symnmf(PyObject *self, PyObject *args) {
 
     /* Convert the PyObject* (list of lists) to Cmatrix* (double**) using appropriate conversion functions */
     W = convert_PyMatrix_To_CMatrix(pyW, N, N);
-    H = convert_PyMatrix_To_CMatrix(pyH, N, N);
+    H = convert_PyMatrix_To_CMatrix(pyH, N, k);
 
     /* Calculates the H matrix from symnmf algo using func symnmf_c from symnmf.c */
     H = symnmf_c(H, W, N, k);
     
     /* Convert the Cmatrix* (double**) to PyObject* (list of lists) using appropriate conversion functions*/
-    pyH = convert_CMatrix_To_PyMatrix(H, N, N);
+    pyH = convert_CMatrix_To_PyMatrix(H, N, k);
     
     /* Cleanup memory */
     freeMatrix(W, N);
