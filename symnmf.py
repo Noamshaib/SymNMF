@@ -7,7 +7,7 @@ np.random.seed(0)
 def defX(filename):
     return pd.read_csv(filename, header=None).values.tolist()
 
-def initial_H(W, k, n):
+def initial_H(W, n, k):
     W_np = np.array(W)
     m = np.mean(W_np)
     upper_bound = 2 * np.sqrt(m / k)
@@ -39,7 +39,7 @@ N = len(X)
 
 if goal == "symnmf":
     W = msm.norm(X, N, dim)
-    H0 = initial_H(W, k, dim)
+    H0 = initial_H(W, N, k)
     H = msm.symnmf(W, H0, k, N, dim)
     printMatrix(H)
 
@@ -54,4 +54,3 @@ elif goal == "ddg":
 else:  # goal == "norm"
     W = msm.norm(X, N, dim)
     printMatrix(W)
-
