@@ -25,7 +25,7 @@ int main(int argc, char **argv){
 
     if (argc != 3)
     {
-        printf("An Error Has Occurred");
+        printf("An Error Has Occurred\n");
         exit(1);
     }
 
@@ -34,7 +34,7 @@ int main(int argc, char **argv){
 
     if (file == NULL)
     {
-        printf("An Error Has Occurred");
+        printf("An Error Has Occurred\n");
         exit(1);
     }
 
@@ -57,14 +57,14 @@ int main(int argc, char **argv){
     /* Allocate memory for the matrix that will contain the input */          /* MAYBE CHANCE THE NUMBER OF COLUMNS */
     dataPointsMatrix = (double **)malloc(rows * sizeof(double *));
     if (dataPointsMatrix == NULL){
-        printf("An Error Has Occurred");
+        printf("An Error Has Occurred\n");
         exit(1);
     }
     for (i = 0; i < rows; i++)
     {
         dataPointsMatrix[i] = (double *)malloc(cols * sizeof(double));
         if (dataPointsMatrix[i] == NULL){
-            printf("An Error Has Occurred");
+            printf("An Error Has Occurred\n");
             exit(1);
         }
     }
@@ -171,13 +171,13 @@ double **mallocMatrix(int rows, int cols){
     int i, j;
     double **A = (double **)malloc(rows * sizeof(double *));
     if (A == NULL){
-        printf("An Error Has Occurred");
+        printf("An Error Has Occurred\n");
         exit(1);
     }
     for (i = 0; i < rows; i++) {
         A[i] = (double *)malloc(cols * sizeof(double));
         if (A[i] == NULL){
-            printf("An Error Has Occurred");
+            printf("An Error Has Occurred\n");
             exit(1);
         }
         for(j = 0; j < cols; j++) {
@@ -375,158 +375,4 @@ double **symnmf_c(double **initialH, double **W, int N, int k){
     
 
     return nextH;
-}
-
-
-
-/*from now on the code is for kmeans (for the analysis part)*/
-
-/*this fucntion returns the index of the most close centroid to the vector x_i*/
-int CLASSIFY_CENTROID(double* X_i,int K, int dimension,double* CENTROIDS){
-    int RESULT = -1;
-    double MINIMUM = __DBL_MAX__;
-    double MINIMUM_CONTENDER;
-    int j = 0;
-    double* centroids_number_j_ptr;
-
-    for( j = 0; j < K ; j++) {
-
-    centroids_number_j_ptr = CENTROIDS + j*(dimension);
-        
-        MINIMUM_CONTENDER = squaredDistance(X_i , centroids_number_j_ptr , dimension);
-
-        if (MINIMUM_CONTENDER < MINIMUM) {
-            MINIMUM = MINIMUM_CONTENDER;
-            RESULT = j;
-        }
-        
-    }
-
-    return RESULT;
-
-}
-
-/*this function will update the new Centroids, we will use the funcion CLASSIFY_CENTROID so we know which vector we want to add to each centroid
-the function will return 0 if for each centroid : LENGTH(new_centroid[i],centroid[i]) < epsilon , else it will return 1
-as a result , we will know we arrived to the wanted precision of centroids and we can finifsh the program*/
-
-int UPDATE_CENTROIDS(double** matrix, int k, int dimension,int num_rows ,double* centroids ,double* new_centroids, int* num_of_elem_in_cluster,double eps){
-    int enough_precision = 0;
- 
-    long double EPSILON = eps;
-
-    int i = 0;
-    int j = 0;
-    int a = 0;
-    int b = 0;
-    int index = 0;
-
-
-
-    for ( i = 0; i < k ; i++){
-        num_of_elem_in_cluster[i] = 0;
-    }
-
-    
-    for( a = 0 ; a < k ; a++){
-            for ( b = 0; b < dimension ; b ++){
-                new_centroids[a*(dimension) + b] = 0;
-            }
-    }
-
-
-    for( i = 0 ; i < num_rows ; i++ ){
-
-        index = CLASSIFY_CENTROID(matrix[i],k,dimension,centroids); /*identifying the index of the closest centroid and adding it to the new centroid*/
-        num_of_elem_in_cluster[index] +=1;
-
-        for ( j = 0; j < dimension ; j++){
-            new_centroids[index*(dimension) + j] += matrix[i][j];
-
-        }
-
-    }
-
-
-
-    for ( i = 0 ; i < k ; i++){
-        for (  j =0 ; j < dimension ; j++){
-            new_centroids[i*(dimension) + j] = ( (new_centroids[i*(dimension) + j])*((double) 1 / (double) ( num_of_elem_in_cluster[i])) );
-
-        }
-    }
-
-        for( i = 0; i < k ; i++){
-            if (squaredDistance(centroids + i*dimension , new_centroids + i*dimension , dimension) >= EPSILON) {
-                enough_precision = 1;
-
-            }
-        }
-    
-    for ( i = 0 ; i < k ; i++){
-        for (  j =0 ; j < dimension ; j++){
-            centroids[i*(dimension) + j] = ((new_centroids[i*(dimension) + j]));
-
-        }
-
-    }
-
-return enough_precision;
-
-}
-
-/*this function will return the k centroids that will satisfy the parameters
-it will use the tool functions : LENGTH ,UPDATE_CENTROIDS classify_CENTOIRDS*/
-double* kmeans_c(int Pyk, int Pyiter,int Pynumofrows,int Pydim ,double Pyepsilon,double** C_Matrix, double* C_Centroids){
-
-    int k = Pyk;
-    int iteration = Pyiter;
-    int num_of_rows = Pynumofrows;
-    int dimension = Pydim;
-    double epsilon = Pyepsilon*Pyepsilon;
-    int i = 0;
-
-    int precision = 1;
-    int* num_of_rows_ptr = & num_of_rows;
-    int* dimension_ptr = & dimension;
-
-    double** MATRIX =  C_Matrix;
-    double* centroids = C_Centroids;
-    double* new_centroids;
-    int* num_of_elem_in_kluster;
-    int kluster_times_dimensions;
-
-    kluster_times_dimensions = *(dimension_ptr)*k;
-
-    new_centroids = malloc(kluster_times_dimensions*sizeof(double));
-
-      if (new_centroids ==NULL){
-        printf("failed to allocate memory new centroids\n");
-        exit(1);
-    }
-
-    num_of_elem_in_kluster = malloc(k*sizeof(int));
-
-      if (num_of_elem_in_kluster ==NULL){
-        printf("failed to allocate memory klusters\n");
-        exit(1);
-    }
-
-    i  = 0;
-  
-    while ( i < iteration && precision == 1){ // the algorithm
-        precision = UPDATE_CENTROIDS(MATRIX,k,*(dimension_ptr),*(num_of_rows_ptr),centroids,new_centroids,num_of_elem_in_kluster,epsilon);
-        i +=1;
-    
-    }
-   
-    for( i = 0; i < *(num_of_rows_ptr) ; i++) {
-    free(MATRIX[i]);
-    }
-    
-    free(num_of_elem_in_kluster);
-    free(new_centroids);
-    free(MATRIX);
-
-    return centroids;
 }
