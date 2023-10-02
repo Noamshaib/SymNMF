@@ -165,7 +165,8 @@ static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
     /* providing space for the C Matrix - mXn*/
     CMatrix = (double**) malloc(sizeof(double **)*(m));
     if (CMatrix == NULL){
-        return NULL;
+        printf("An Error Has Occurred\n");
+        exit(1);
     }
     
     /* fill the C matrix with values of py matrix */
@@ -174,7 +175,8 @@ static double **convert_PyMatrix_To_CMatrix(PyObject *pyMatrix, int m, int n){
         curr_lst = PyList_GET_ITEM(pyMatrix,i);     
         CMatrix[i] = (double*) malloc(sizeof(double *)*(n));
         if (CMatrix[i] == NULL){
-            return NULL;
+            printf("An Error Has Occurred\n");
+            exit(1);
         }
 
         for(j = 0; j < n; j++){
