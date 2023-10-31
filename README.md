@@ -3,8 +3,6 @@ The final project of "Software Project" course.
 In this project we will implement a clustering algorithm that is based on symmetric Non-negative Matrix Factorization (symNMF).
 We will further apply it to several datasets and compare to Kmeans. 
 
-# SymNMF Clustering Algorithm
-
 ## Introduction
 SymNMF (Symmetric Non-negative Matrix Factorization) is a powerful clustering algorithm that finds application in various fields. This project involves implementing the SymNMF algorithm in Python and C and performing a comparative analysis against K-means. The goal is to create an efficient clustering solution for a given dataset, where the number of clusters is a parameter of the method.
 
